@@ -49,6 +49,7 @@ class InitAlertsTest(unittest.TestCase):
         self.assertEquals(8888, alerts.harold.port)
         self.assertEquals('secret', alerts.harold.secret)
         self.assertEquals(1, alerts.config.getint('custom1', 'a'))
+        self.assertTrue(isinstance(alerts.harold, testing.TestingHarold))
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,7 @@
 import tempfile
 
+import wessex
+
 import alerts
 
 def stub(namespace, name):
@@ -24,7 +26,20 @@ def stub(namespace, name):
         return wrapped
     return decorator
 
+class TestingHarold(wessex.Harold):
+    def __init__(self, *args, **kwargs):
+        super(TestingHarold, self).__init__(*args, **kwargs)
+        self.reset_for_testing()
+
+    def _post_to_harold(self, path, data):
+        self.post_log.append((path, data))
+
+    def reset_for_testing(self):
+        self.post_log = []
+
+@stub(wessex, 'Harold')
 def init_alerts(**sections):
+    wessex.Harold = TestingHarold
     config = dict(
         harold=dict(host='localhost', port=8888, secret='secret'),
     )
@@ -37,3 +52,5 @@ def init_alerts(**sections):
             f.write('\n')
         f.flush()
         alerts.init(config_path=f.name)
+
+
