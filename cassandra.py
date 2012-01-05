@@ -31,9 +31,6 @@ class CassandraMonitor():
     def mark_error(self, tag, message):
         self.recent_failures += 1
         if self.recent_failures > THRESHOLD:
-            if tag == "fucking-cass-22":
-                print "Ignoring %s" % tag
-                return
             alerts.harold.alert(tag, message)
             self.recent_failures = THRESHOLD
     def clear_error(self):
