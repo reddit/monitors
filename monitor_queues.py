@@ -7,58 +7,11 @@ import sys
 import time
 import urllib
 
-# Alert noisiness is suppressed by these two factors. First, a queue must be in
-# an alerting state continuously for at least ALERT_GRACE_PERIOD seconds.
-# Second, no alert for a single queue will be repeated within ALERT_RATE_LIMIT
-# seconds.
-ALERT_GRACE_PERIOD = 5
-ALERT_RATE_LIMIT = 15
+import alerts
 
-HAROLD_BASE = 'http://127.0.0.1:8888/harold'
-HAROLD_SECRET = 'secret'
-HAROLD_HEARTBEAT_INTERVAL = 60  # seconds
-HAROLD_HEARTBEAT_TIMEOUT_FACTOR = 3
-
-GRAPHITE_HOST = '10.114.195.155'
-GRAPHITE_PORT = 2003
-
-POLL_INTERVAL = 1.0
-
-QUEUE_LIMITS = dict(
-    scraper_q=4000,
-    newcomments_q=200,
-    log_q=10000,
-    usage_q=8000,
-    commentstree_q=1000,
-    corrections_q=500,
-    spam_q=500,
-    vote_comment_q=10000,
-    vote_link_q=10000,
-    indextank_changes=50000,
-    solrsearch_changes=100000,
-    ratelimit_q=sys.maxint,
-)
-
-# dict of queue name to timestamp of beginning of current overrun status
-overruns = {}
-
-# dict of queue name to time of last alert
-recent_alerts = {}
-
-# timestamp of the last time a heartbeat was sent
-last_heartbeat = 0
-
-def harold_url(command):
-    return '%s/%s/%s' % (HAROLD_BASE, command, HAROLD_SECRET)
-
-def harold_send_message(command, **data):
-    return urllib.urlopen(harold_url(command), urllib.urlencode(data))
-
-def send_heartbeat():
-    global last_heartbeat
-    last_heartbeat = time.time()
-    interval = HAROLD_HEARTBEAT_INTERVAL * HAROLD_HEARTBEAT_TIMEOUT_FACTOR
-    harold_send_message('heartbeat', tag='monitor_queues', interval=interval)
+def parse_addr(addr):
+    host, port_str = addr.split(':', 1)
+    return host, int(port_str)
 
 def get_queue_lengths():
     pipe = subprocess.Popen(['/usr/sbin/rabbitmqctl', 'list_queues'],
@@ -68,67 +21,111 @@ def get_queue_lengths():
     return dict((name, int(value)) for name, value in
                 (line.split() for line in lines))
 
-def send_graphite_message(msg):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((GRAPHITE_HOST, GRAPHITE_PORT))
-    sock.send(msg + '\n')
-    sock.close()
+class QueueMonitor:
+    '''Polls "rabbitmqctl list_queues" to report on queue lengths.
 
-def send_queue_stats(queue_lengths):
-    stat_msgs = []
-    now = time.time()
-    for name, length in queue_lengths.iteritems():
-        stat_msgs.append('stats.queue.%s.length %d %d' % (name, length, now))
-    if not stat_msgs:
-        return
-    send_graphite_message('\n'.join(stat_msgs))
+    @attr overruns: dict, maps queue name to timestamp of when current overrun
+        status began
+    @attr recent_alerts: dict, maps queue name to timestamp of most recent alert
+    @attr last_heartbeat: float, timestamp of last heartbeat sent to harold
+    '''
+    def __init__(self):
+        self.config = alerts.config
+        self.harold = alerts.harold
+        self.overruns = {}
+        self.recent_alerts = {}
+        self.last_heartbeat = 0
+        self._load_from_config()
 
-def send_queue_alert(queue_name, queue_length, alert_threshold):
-    alert = dict(
-        tag=queue_name,
-        message='%s is too long (%d/%d)' % (
-            queue_name, queue_length, alert_threshold)
-    )
-    logging.warn('ALERT on %(tag)s: %(message)s' % alert)
-    harold_send_message('alert', **alert)
+    def _load_from_config(self):
+        config = self.config
+        self.heartbeat_interval = config.getfloat(
+            'queues', 'heartbeat_interval')
+        self.heartbeat_timeout_factor = config.getfloat(
+            'queues', 'heartbeat_timeout_factor')
+        self.graphite_host, self.graphite_port = parse_addr(
+            config.get('queues', 'graphite_addr'))
+        self.alert_grace_period = config.getfloat(
+            'queues', 'alert_grace_period')
+        self.alert_rate_limit = config.getfloat('queues', 'alert_rate_limit')
+        self.poll_interval = config.getfloat('queues', 'poll_interval')
+        self.queue_limits = dict((q, config.getint('queue_limits', q))
+                                 for q in config.options('queue_limits'))
 
-def update_queue_status(queue_name, queue_length, alert_threshold):
-    if queue_length <= alert_threshold:
-        if queue_name in overruns:
-            del overruns[queue_name]
-        return False
-    else:
+    def send_heartbeat(self):
+        self.last_heartbeat = time.time()
+        interval = self.heartbeat_interval * self.heartbeat_timeout_factor
+        self.harold.heartbeat('monitor_queues', interval)
+
+    def send_graphite_message(self, msg):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((self.graphite_host, self.graphite_port))
+        sock.send(msg + '\n')
+        sock.close()
+
+    def send_queue_stats(self, queue_lengths):
+        stat_msgs = []
         now = time.time()
-        overruns.setdefault(queue_name, now)
-        if (now - overruns[queue_name] >= ALERT_GRACE_PERIOD
-            and recent_alerts.get(queue_name, 0) + ALERT_RATE_LIMIT <= now):
-            send_queue_alert(queue_name, queue_length, alert_threshold)
-            recent_alerts[queue_name] = now
-            return True
-        else:
-            logging.warn('suppressing continued alert on %s', queue_name)
-            return False
+        for name, length in queue_lengths.iteritems():
+            stat_msgs.append('stats.queue.%s.length %d %d'
+                             % (name, length, now))
+        if not stat_msgs:
+            return
+        self.send_graphite_message('\n'.join(stat_msgs))
 
-def check_queues():
-    queue_lengths = get_queue_lengths()
-    for name, length in queue_lengths.iteritems():
-        update_queue_status(name, length, QUEUE_LIMITS.get(name, sys.maxint))
-    send_queue_stats(queue_lengths)
-    if time.time() - last_heartbeat >= HAROLD_HEARTBEAT_INTERVAL:
-        send_heartbeat()
+    def send_queue_alert(self, queue_name, queue_length, alert_threshold):
+        alert = dict(
+            tag=queue_name,
+            message='%s is too long (%d/%d)' % (
+                queue_name, queue_length, alert_threshold)
+        )
+        logging.warn('ALERT on %(tag)s: %(message)s' % alert)
+        self.harold.alert(**alert)
+
+    def update_queue_status(self, queue_name, queue_length, alert_threshold):
+        if queue_length <= alert_threshold:
+            if queue_name in self.overruns:
+                del self.overruns[queue_name]
+            return False
+        else:
+            now = time.time()
+            self.overruns.setdefault(queue_name, now)
+            if (now - self.overruns[queue_name] >= self.alert_grace_period
+                and self.recent_alerts.get(queue_name, 0)
+                    + self.alert_rate_limit <= now):
+                self.send_queue_alert(queue_name, queue_length, alert_threshold)
+                self.recent_alerts[queue_name] = now
+                return True
+            else:
+                logging.warn('suppressing continued alert on %s', queue_name)
+                return False
+
+    def check_queues(self):
+        queue_lengths = get_queue_lengths()
+        for name, length in queue_lengths.iteritems():
+            self.update_queue_status(name, length,
+                                     self.queue_limits.get(name, sys.maxint))
+        self.send_queue_stats(queue_lengths)
+        if time.time() - self.last_heartbeat >= self.heartbeat_interval:
+            self.send_heartbeat()
+
+    def poll(self):
+        while True:
+            logging.info('checking on queues')
+            try:
+                monitor.check_queues()
+            except:
+                logging.exception('exception raised in check_queues')
+            time.sleep(self.poll_interval)
 
 def main():
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s %(levelname)s %(message)s',
     )
-    while True:
-        logging.info('checking on queues')
-        try:
-            check_queues()
-        except:
-            logging.exception('exception raised in check_queues')
-        time.sleep(POLL_INTERVAL)
+    alerts.init()
+    monitor = QueueMonitor()
+    monitor.poll()
 
 if __name__ == '__main__':
     main()
