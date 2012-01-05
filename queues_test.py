@@ -6,7 +6,7 @@ import time
 import unittest
 
 import alerts
-import monitor_queues
+import queues
 import testing
 
 class MockPipe:
@@ -38,13 +38,13 @@ class QueueMonitorTest(unittest.TestCase):
             ),
             queue_limits=dict(q1=1, q2=2),
         )
-        self.monitor = monitor_queues.QueueMonitor()
+        self.monitor = queues.QueueMonitor()
 
     @testing.stub(subprocess, 'Popen')
     def test_get_queue_lengths(self):
         output = 'Listing queues ...\nA\t1\nB\t2\n...done.\n'
         subprocess.Popen = lambda cmd, stdout: MockPipe(output)
-        self.assertEquals(dict(A=1, B=2), monitor_queues.get_queue_lengths())
+        self.assertEquals(dict(A=1, B=2), queues.get_queue_lengths())
 
     @testing.stub(time, 'time')
     def test_send_queue_stats(self):
@@ -105,13 +105,13 @@ class QueueMonitorTest(unittest.TestCase):
         self.assertEquals(('A', 4, 1), alerts[-1])
 
     @testing.stub(time, 'time')
-    @testing.stub(monitor_queues, 'get_queue_lengths')
+    @testing.stub(queues, 'get_queue_lengths')
     def test_check_queues(self):
         now = 1000
         expected_queue_lengths = dict(q1=1, q2=2, q3=3)
 
         time.time = lambda: now
-        monitor_queues.get_queue_lengths = lambda: expected_queue_lengths
+        queues.get_queue_lengths = lambda: expected_queue_lengths
 
         queue_statuses = {}
         def stub_update_queue_status(n, l, t):
