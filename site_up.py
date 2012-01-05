@@ -37,5 +37,6 @@ def monitor_site(url):
 
 
 if __name__ == "__main__":
+    alerts.init()
     url = sys.argv[1]
     monitor_site(url)

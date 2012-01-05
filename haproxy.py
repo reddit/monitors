@@ -60,6 +60,7 @@ def main():
     # threshold = 200
     # interval = 30
     # url.* = url
+    alerts.init()
     haproxy_urls = [value for key, value in
                     alerts.config.items(CONFIG_SECTION)
                     if key.startswith("url")]

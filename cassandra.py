@@ -68,6 +68,7 @@ class CassandraMonitor():
             time.sleep(INTERVAL)
 
 if __name__ == "__main__":
+    alerts.init()
     server = sys.argv[1]
     monitor = CassandraMonitor(server)
     monitor.start_monitor()
