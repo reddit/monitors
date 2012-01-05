@@ -1,5 +1,48 @@
 #!/usr/bin/env python
 
+'''Provides a monitor that polls queue lengths using rabbitmqctl.
+
+Run this as a script in the same directory as a production.ini file that looks
+like this:
+
+[harold]
+host = localhost
+port = 8888
+secret = haroldsecret
+
+[queues]
+# check queue lengths with this frequency (seconds)
+poll_interval = 1
+
+# These two settings control alert noisiness. The grace period is how long a
+# queue must show an overrun (in seconds) before an alert is raised. The rate
+# limit is how long (in seconds) it must be since the last alert was raised
+# before we'll raise another one (per queue).
+alert_grace_period = 5
+alert_rate_limit = 15
+
+# tell harold we're alive at this frequency (seconds)
+heartbeat_interval = 60
+
+# multiply by heartbeat_interval to tell harold how long to wait before deciding
+# we're "dead"
+heartbeat_timeout_factor = 3
+
+# send messages to graphite at this address
+graphite_addr = localhost:2003
+
+[queue_limits]
+# list queue names with alerting thresholds for queue length here
+# queues not mentioned here will still have stats recorded in graphite, but
+# won't be alerted on
+
+commentstree_q = 1000
+newcomments_q = 200
+vote_comment_q = 10000
+vote_link_q = 10000
+# etc.
+'''
+
 import logging
 import socket
 import subprocess
