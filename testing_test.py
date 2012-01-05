@@ -1,5 +1,6 @@
 import unittest
 
+import alerts
 import testing
 
 class StubTest(unittest.TestCase):
@@ -37,6 +38,17 @@ class StubTest(unittest.TestCase):
         test()
         self.assertRaises(AttributeError, lambda: self.object.undef1)
         self.assertRaises(AttributeError, lambda: self.object.undef2)
+
+class InitAlertsTest(unittest.TestCase):
+    def test_init(self):
+        testing.init_alerts(
+            custom1=dict(a=1, b='two'),
+            custom2=dict(c='c'),
+        )
+        self.assertEquals('localhost', alerts.harold.host)
+        self.assertEquals(8888, alerts.harold.port)
+        self.assertEquals('secret', alerts.harold.secret)
+        self.assertEquals(1, alerts.config.getint('custom1', 'a'))
 
 if __name__ == '__main__':
     unittest.main()
