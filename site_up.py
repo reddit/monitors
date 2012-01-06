@@ -21,7 +21,7 @@ def monitor_site(url):
     recent_failures = 0
     while True:
         try:
-            response = urllib2.urlopen(url, timeout=TIMEOUT)
+            urllib2.urlopen(url, timeout=TIMEOUT)
         except urllib2.URLError:
             recent_failures += 1
 
@@ -32,7 +32,8 @@ def monitor_site(url):
             recent_failures = max(recent_failures - 1, 0)
             time.sleep(INTERVAL)
 
-        alerts.harold.heartbeat("monitor_%s" % tag, max(INTERVAL, TIMEOUT) * 2)
+        alerts.harold.heartbeat("monitor_%s_%s" % (tag, local_name),
+                                max(INTERVAL, TIMEOUT) * 2)
 
 
 if __name__ == "__main__":
