@@ -21,7 +21,7 @@ def monitor_site(url):
     recent_failures = 0
     while True:
         try:
-            response = urllib2.urlopen(url, timeout=TIMEOUT)
+            urllib2.urlopen(url, timeout=TIMEOUT)
         except urllib2.URLError:
             recent_failures += 1
 
