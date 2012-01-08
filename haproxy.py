@@ -41,8 +41,8 @@ def watch_request_queues(haproxy_urls, threshold, check_interval):
         for pool, queue_length in pools.iteritems():
             if queue_length > threshold:
                 if pool in queued_pools:
-                    alerts.harold.alert("queueing-%s" % pool,
-                                        "%s pool is queueing (%d)" %
+                    alerts.harold.alert("queuing-%s" % pool,
+                                        "%s pool is queuing (%d)" %
                                         (pool, queue_length))
                 queued_pools.add(pool)
             else:
