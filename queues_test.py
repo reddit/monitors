@@ -1,24 +1,21 @@
 #!/usr/bin/env python
 
+import json
+import StringIO
 import subprocess
 import sys
 import time
 import unittest
+import urllib
 
 import alerts
 import queues
 import testing
 
-class MockPipe:
-    def __init__(self, pipe_output):
-        self.pipe_output = pipe_output
-
-    def communicate(self):
-        return (self.pipe_output, '')
-
 class QueueMonitorTest(unittest.TestCase):
     HEARTBEAT_INTERVAL = 5
     HEARTBEAT_TIMEOUT_FACTOR = 2
+    RABBITMQ_URL = 'http://localhost:55555'
     GRAPHITE_HOST = 'localhost'
     GRAPHITE_PORT = 22003
     ALERT_GRACE_PERIOD = 15
@@ -30,6 +27,7 @@ class QueueMonitorTest(unittest.TestCase):
             queues=dict(
                 heartbeat_interval=self.HEARTBEAT_INTERVAL,
                 heartbeat_timeout_factor=self.HEARTBEAT_TIMEOUT_FACTOR,
+                rabbitmq_url=self.RABBITMQ_URL,
                 graphite_addr='%s:%d' % (
                     self.GRAPHITE_HOST, self.GRAPHITE_PORT),
                 alert_grace_period=self.ALERT_GRACE_PERIOD,
@@ -40,11 +38,14 @@ class QueueMonitorTest(unittest.TestCase):
         )
         self.monitor = queues.QueueMonitor()
 
-    @testing.stub(subprocess, 'Popen')
+    @testing.stub(urllib, 'urlopen')
     def test_get_queue_lengths(self):
-        output = 'Listing queues ...\nA\t1\nB\t2\n...done.\n'
-        subprocess.Popen = lambda cmd, stdout: MockPipe(output)
-        self.assertEquals(dict(A=1, B=2), queues.get_queue_lengths())
+        data = [
+            {'name': 'A', 'messages': 1},
+            {'name': 'B', 'messages': 2},
+        ]
+        urllib.urlopen = lambda u: StringIO.StringIO(json.dumps(data))
+        self.assertEquals(dict(A=1, B=2), self.monitor.get_queue_lengths())
 
     @testing.stub(time, 'time')
     def test_send_queue_stats(self):

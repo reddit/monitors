@@ -31,6 +31,9 @@ heartbeat_timeout_factor = 3
 # send messages to graphite at this address
 graphite_addr = localhost:2003
 
+# poll queue lengths using the rabbitmq management API at this URL
+rabbitmq_url = http://guest:guest@localhost:55672/api/queues
+
 [queue_limits]
 # list queue names with alerting thresholds for queue length here
 # queues not mentioned here will still have stats recorded in graphite, but
@@ -43,6 +46,7 @@ vote_link_q = 10000
 # etc.
 '''
 
+import json
 import logging
 import socket
 import subprocess
@@ -55,14 +59,6 @@ import alerts
 def parse_addr(addr):
     host, port_str = addr.split(':', 1)
     return host, int(port_str)
-
-def get_queue_lengths():
-    pipe = subprocess.Popen(['/usr/sbin/rabbitmqctl', 'list_queues'],
-                            stdout=subprocess.PIPE)
-    output = pipe.communicate()[0]
-    lines = output.split('\n')[1:-2]  # throw away first line and last lines
-    return dict((name, int(value)) for name, value in
-                (line.split() for line in lines))
 
 class QueueMonitor:
     '''Polls "rabbitmqctl list_queues" to report on queue lengths.
@@ -86,6 +82,7 @@ class QueueMonitor:
             'queues', 'heartbeat_interval')
         self.heartbeat_timeout_factor = config.getfloat(
             'queues', 'heartbeat_timeout_factor')
+        self.rabbitmq_url = config.get('queues', 'rabbitmq_url')
         self.graphite_host, self.graphite_port = parse_addr(
             config.get('queues', 'graphite_addr'))
         self.alert_grace_period = config.getfloat(
@@ -94,6 +91,11 @@ class QueueMonitor:
         self.poll_interval = config.getfloat('queues', 'poll_interval')
         self.queue_limits = dict((q, config.getint('queue_limits', q))
                                  for q in config.options('queue_limits'))
+
+    def get_queue_lengths(self):
+        f = urllib.urlopen(self.rabbitmq_url)
+        data = json.loads(f.read())
+        return dict((item['name'], item['messages']) for item in data)
 
     def send_heartbeat(self):
         self.last_heartbeat = time.time()
