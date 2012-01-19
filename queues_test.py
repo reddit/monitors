@@ -106,13 +106,12 @@ class QueueMonitorTest(unittest.TestCase):
         self.assertEquals(('A', 4, 1), alerts[-1])
 
     @testing.stub(time, 'time')
-    @testing.stub(queues, 'get_queue_lengths')
     def test_check_queues(self):
         now = 1000
         expected_queue_lengths = dict(q1=1, q2=2, q3=3)
 
         time.time = lambda: now
-        queues.get_queue_lengths = lambda: expected_queue_lengths
+        self.monitor.get_queue_lengths = lambda: expected_queue_lengths
 
         queue_statuses = {}
         def stub_update_queue_status(n, l, t):

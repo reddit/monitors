@@ -146,7 +146,7 @@ class QueueMonitor:
                 return False
 
     def check_queues(self):
-        queue_lengths = get_queue_lengths()
+        queue_lengths = self.get_queue_lengths()
         for name, length in queue_lengths.iteritems():
             self.update_queue_status(name, length,
                                      self.queue_limits.get(name, sys.maxint))
@@ -158,7 +158,7 @@ class QueueMonitor:
         while True:
             logging.info('checking on queues')
             try:
-                monitor.check_queues()
+                self.check_queues()
             except:
                 logging.exception('exception raised in check_queues')
             time.sleep(self.poll_interval)
