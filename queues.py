@@ -100,7 +100,8 @@ class QueueMonitor:
     def send_heartbeat(self):
         self.last_heartbeat = time.time()
         interval = self.heartbeat_interval * self.heartbeat_timeout_factor
-        self.harold.heartbeat('monitor_queues', interval)
+        # harold expects the interval to be given as an int
+        self.harold.heartbeat('monitor_queues', int(interval))
 
     def send_graphite_message(self, msg):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

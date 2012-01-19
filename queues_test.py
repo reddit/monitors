@@ -129,9 +129,11 @@ class QueueMonitorTest(unittest.TestCase):
         self.assertEquals(
             [(['heartbeat'],
               dict(tag='monitor_queues',
-                  interval=self.HEARTBEAT_INTERVAL
-                      * self.HEARTBEAT_TIMEOUT_FACTOR))],
+                   interval=self.HEARTBEAT_INTERVAL
+                       * self.HEARTBEAT_TIMEOUT_FACTOR))],
             alerts.harold.post_log)
+        self.assertTrue(
+            isinstance(alerts.harold.post_log[0][1]['interval'], int))
         self.assertEquals(now, self.monitor.last_heartbeat)
 
         # Second run within heartbeat interval, no heartbeat emitted.
