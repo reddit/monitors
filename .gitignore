@@ -1,2 +1,3 @@
 production.ini
 *.pyc
+.*.sw?
