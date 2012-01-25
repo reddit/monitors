@@ -217,7 +217,7 @@ class Master:
         if self.harold:
             try:
                 logging.info('Harold heartbeat.')
-                self.harold.heartbeat('tallier', int(self.flush_interval * 2))
+                self.harold.heartbeat('tallier', int(self.flush_interval * 3))
             except urllib2.URLError:
                 logging.exception('Error sending heartbeat to harold!')
 
