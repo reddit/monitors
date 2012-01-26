@@ -438,27 +438,8 @@ class Sample:
             value_type = cls.COUNTER
         return cls(key, value, value_type, sample_rate)
 
-def configure_logging(config):
-    class LoggingFormatter(logging.Formatter):
-        def formatTime(self, record, datefmt=None):
-            timestamp = time.strftime(datefmt)
-            return timestamp % dict(ms=(1000 * record.created) % 1000)
-
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-    if config.has_option('tallier', 'log_file'):
-        ch = logging.FileHandler(config.get('tallier', 'log_file'))
-    else:
-        ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    formatter = LoggingFormatter(
-        '%(levelname).1s%(asctime)s: %(message)s', '%m%d %H:%M:%S.%%(ms)03d')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-
 if __name__ == '__main__':
     alerts.init()
-    configure_logging(alerts.config)
     master = Master.from_config(alerts.config, alerts.harold)
     logging.info('Serving...')
     master.start()
