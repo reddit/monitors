@@ -54,7 +54,7 @@ class CassandraMonitor():
                 stdout.close()
                 err = stderr.read()
                 if err:
-                    raise Exception("Unknown error: %s" % str)
+                    raise Exception("Unknown error: %s" % err)
                 stderr.close()
                 ssh.close()
             except DownedNodeException as e:
