@@ -18,10 +18,13 @@ def monitor_site(url):
     tag = urlparse.urlparse(url).hostname
     local_name = platform.node()
 
+    request = urllib2.Request(url)
+    request.add_header("User-Agent", "site-up monitor by /u/spladug")
+
     recent_failures = 0
     while True:
         try:
-            urllib2.urlopen(url, timeout=TIMEOUT)
+            urllib2.urlopen(request, timeout=TIMEOUT)
         except urllib2.URLError:
             recent_failures += 1
 
