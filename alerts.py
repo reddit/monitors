@@ -6,12 +6,14 @@ import logging.handlers
 import os
 import sys
 import time
+import socket
 
 import wessex
 
 __all__ = ["harold", "config"]
 
 harold = None
+graphite = None
 config = None
 
 def init(config_path='production.ini'):
@@ -19,6 +21,8 @@ def init(config_path='production.ini'):
     config = load_config(path=config_path)
     if config.has_section('logging'):
         configure_logging(config)
+    if config.has_section('graphite'):
+        configure_graphite(config)
     harold = get_harold(config)
 
 def load_config(path='production.ini'):
@@ -74,3 +78,32 @@ def configure_logging(config):
     logger.setLevel(_get_logging_level(config))
     logger.addHandler(ch)
     return logger
+
+def _parse_addr(addr):
+    host, port_str = addr.split(':', 1)
+    return host, int(port_str)
+
+class Graphite(object):
+    def __init__(self, address):
+        self.address = address
+
+    def _send_message(self, msg):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(self.address)
+        sock.send(msg + '\n')
+        sock.close()
+
+    def send_values(self, items):
+        messages = []
+        timestamp = str(time.time())
+        for key, value in items.iteritems():
+            messages.append(" ".join((key, str(value), timestamp)))
+        if messages:
+            self._send_message("\n".join(messages))
+
+def configure_graphite(config):
+    global graphite
+
+    address_text = config.get('graphite', 'graphite_addr')
+    address = _parse_addr(address_text)
+    graphite = Graphite(address)
