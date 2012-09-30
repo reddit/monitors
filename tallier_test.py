@@ -182,5 +182,12 @@ class SampleTest(unittest.TestCase):
         self.assertEquals(2, ss[1].value)
         self.assertEquals(3, ss[2].value)
 
+        multisample = tallier.Sample.parse('key1:1|c\nkey2:9|c')
+        self.assertEquals(2, len(multisample))
+        self.assertEquals('key1', multisample[0].key)
+        self.assertEquals('key2', multisample[1].key)
+        self.assertEquals(1, multisample[0].value)
+        self.assertEquals(9, multisample[1].value)
+
 if __name__ == '__main__':
     unittest.main()

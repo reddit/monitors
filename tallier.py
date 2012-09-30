@@ -403,14 +403,15 @@ class Sample:
     def parse(cls, datagram):
         """Parses a datagram into a list of Sample values."""
         samples = []
-        parts = datagram.split(':')
-        if parts:
-            key = cls._normalize_key(parts.pop(0))
-            for part in parts:
-                try:
-                    samples.append(cls._parse_part(key, part))
-                except ValueError:
-                    continue
+        for metric in datagram.splitlines():
+            parts = metric.split(':')
+            if parts:
+                key = cls._normalize_key(parts.pop(0))
+                for part in parts:
+                    try:
+                        samples.append(cls._parse_part(key, part))
+                    except ValueError:
+                        continue
         return samples
 
     @classmethod
