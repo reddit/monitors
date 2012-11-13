@@ -163,15 +163,19 @@ class Master:
         agg_counters = collections.defaultdict(float)
         agg_timers = {}
         total_message_count = 0
+        total_byte_count = 0
         for counters, timers in results:
             for key, value in counters.iteritems():
                 agg_counters[key] += value
                 if key.startswith('tallier.messages.child_'):
                     total_message_count += value
+                elif key.startswith('tallier.bytes.child_'):
+                    total_byte_count += value
             for key, values in timers.iteritems():
                 agg_timers.setdefault(key, []).extend(values)
 
         agg_counters['tallier.messages.total'] = total_message_count
+        agg_counters['tallier.bytes.total'] = total_byte_count
 
         msgs = self._build_graphite_report(agg_counters, agg_timers)
         return self._send_to_graphite(msgs)
@@ -344,6 +348,8 @@ class Listener(threading.Thread):
         self.current_samples = (collections.defaultdict(float), {})
         self.message_count = 0
         self.last_message_count = 0
+        self.byte_count = 0
+        self.last_byte_count = 0
         super(Listener, self).start()
 
     def run(self):
@@ -357,6 +363,7 @@ class Listener(threading.Thread):
         for sample in samples:
             self._handle_sample(sample)
         self.message_count += 1
+        self.byte_count += len(datagram)
 
     def _handle_sample(self, sample):
         key = sample.key
@@ -370,12 +377,17 @@ class Listener(threading.Thread):
         samples, self.current_samples = (
             self.current_samples, (collections.defaultdict(float), {}))
 
-        # Include count of messages received by this listener process since
-        # the last flush.
+        # Include count of messages/bytes received by this listener process
+        # since the last flush.
         mc = self.message_count
         samples[0]['tallier.messages.child_%s' % self.listener_id] = (
             mc - self.last_message_count)
         self.last_message_count = mc
+
+        bc = self.byte_count
+        samples[0]['tallier.bytes.child_%s' % self.listener_id] = (
+            bc - self.last_byte_count)
+        self.last_byte_count = bc
 
         return samples
 
