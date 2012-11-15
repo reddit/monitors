@@ -89,8 +89,12 @@ class QueueMonitor:
             'queues', 'alert_grace_period')
         self.alert_rate_limit = config.getfloat('queues', 'alert_rate_limit')
         self.poll_interval = config.getfloat('queues', 'poll_interval')
-        self.queue_limits = dict((q, config.getint('queue_limits', q))
-                                 for q in config.options('queue_limits'))
+
+        if config.has_section('queue_limits'):
+            self.queue_limits = dict((q, config.getint('queue_limits', q))
+                                    for q in config.options('queue_limits'))
+        else:
+            self.queue_limits = {}
 
     def get_queue_lengths(self):
         f = urllib.urlopen(self.rabbitmq_url)
