@@ -197,5 +197,17 @@ class SampleTest(unittest.TestCase):
         self.assertEquals(1, multisample[0].value)
         self.assertEquals(9, multisample[1].value)
 
+    def test_parse_decompression(self):
+        ss = tallier.Sample.parse('^03abc:1|c\n^02def:2|c\n^08:3|c')
+        self.assertEquals(4, len(ss))
+        self.assertEquals('abc', ss[0].key)
+        self.assertEquals(1, ss[0].value)
+        self.assertEquals('abdef', ss[1].key)
+        self.assertEquals(2, ss[1].value)
+        self.assertEquals('abdef', ss[2].key)
+        self.assertEquals(2, ss[2].value)
+        self.assertEquals('abdef', ss[3].key)
+        self.assertEquals(3, ss[3].value)
+
 if __name__ == '__main__':
     unittest.main()

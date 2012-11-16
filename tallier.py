@@ -417,7 +417,15 @@ class Sample:
     def parse(cls, datagram):
         """Parses a datagram into a list of Sample values."""
         samples = []
+        previous = ''
         for metric in datagram.splitlines():
+            if len(metric) > 2 and metric[0] == '^':
+                try:
+                    prefix_len = int(metric[1:3], 16)
+                except ValueError:
+                    continue
+                metric = previous[:prefix_len] + metric[3:]
+            previous = metric
             parts = metric.split(':')
             if parts:
                 key = cls._normalize_key(parts.pop(0))
