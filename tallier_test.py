@@ -95,7 +95,11 @@ class MasterTest(unittest.TestCase):
 
         agg_counters, agg_timers = master._flush()
         self.assertEquals(
-            {'a': 4, 'b': 6, 'tallier.messages.total': 0}, agg_counters)
+            {'a': 4,
+             'b': 6,
+             'tallier.messages.total': 0,
+             'tallier.bytes.total': 0},
+             agg_counters)
         self.assertEquals(
             {'t1': [1, 2, 3, 5, 6], 't2': [2, 3, 4, 6, 7]}, agg_timers)
 
@@ -124,13 +128,17 @@ class ListenerTest(unittest.TestCase):
         listener = tallier.Listener(0, None)
         listener.message_count = 0
         listener.last_message_count = 0
+        listener.byte_count = 0
+        listener.last_byte_count = 0
         listener.current_samples = (collections.defaultdict(float), {})
-        listener._handle_datagram('key:1|c:2|c:3|c:4|ms:5|ms:6|ms')
+        dgram = 'key:1|c:2|c:3|c:4|ms:5|ms:6|ms'
+        listener._handle_datagram(dgram)
         expected_data = (
             {'key': 6},
             {'key': [4, 5, 6]})
         self.assertEquals(expected_data, listener.current_samples)
         expected_data[0]['tallier.messages.child_0'] = 1
+        expected_data[0]['tallier.bytes.child_0'] = len(dgram)
         self.assertEquals(expected_data, listener.flush())
         self.assertEquals(({}, {}), listener.current_samples)
 

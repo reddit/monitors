@@ -339,6 +339,8 @@ class Listener(threading.Thread):
         self.current_samples = None
         self.message_count = None
         self.last_message_count = None
+        self.byte_count = None
+        self.last_byte_count = None
 
     def start(self):
         """Creates the Listener thread, starts up the Listener, and returns."""
