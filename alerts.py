@@ -23,7 +23,8 @@ def init(config_path='production.ini'):
         configure_logging(config)
     if config.has_section('graphite'):
         configure_graphite(config)
-    harold = get_harold(config)
+    if config.has_section('harold'):
+        harold = get_harold(config)
 
 def load_config(path='production.ini'):
     config = ConfigParser.RawConfigParser()
