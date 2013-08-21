@@ -33,8 +33,8 @@ def monitor_site(url):
                 recent_failures = THRESHOLD
         else:
             recent_failures = max(recent_failures - 1, 0)
-            time.sleep(INTERVAL)
 
+        time.sleep(INTERVAL)
         alerts.harold.heartbeat("monitor_%s_%s" % (tag, local_name),
                                 max(INTERVAL, TIMEOUT) * 2)
 
