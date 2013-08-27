@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import division
+
 import csv
 import urllib2
 import collections
@@ -47,7 +49,7 @@ def pretty_print(usage):
     print "%20s%10s%10s%10s" % ("pool", "cur", "max", "% util")
     print "-" * 50
     for pool, cur, limit in usage:
-        print "%20s%10d%10d%10.2f" % (pool, cur, limit, float(cur) / limit * 100.0)
+        print "%20s%10d%10d%10.2f" % (pool, cur, limit, cur / limit * 100.0)
 
 
 def main():
