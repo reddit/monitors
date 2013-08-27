@@ -17,12 +17,17 @@ def fetch_session_counts(haproxy_stats_urls):
 
     for url in haproxy_stats_urls:
         csv_data = urllib2.urlopen(url, timeout=3)
-        reader = csv.reader(csv_data)
+        reader = csv.DictReader(csv_data)
 
         for i, row in enumerate(reader):
             if i == 0: continue
 
-            proxy_name, service_name, q_cur, s_cur, s_lim, status = row[0], row[1], row[2], row[4], row[6], row[17]
+            proxy_name = row["# pxname"]
+            service_name = row["svname"]
+            q_cur = row["qcur"]
+            s_cur = row["scur"]
+            s_lim = row["slim"]
+            status = row["status"]
 
             if service_name == "BACKEND":
                 queue[proxy_name] = int(q_cur)
