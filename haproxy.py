@@ -2,6 +2,7 @@
 
 import csv
 import urllib2
+import urlparse
 import collections
 import time
 
@@ -16,15 +17,19 @@ def fetch_queue_lengths_by_pool(haproxy_stats_urls):
     pools = collections.Counter()
 
     for url in haproxy_stats_urls:
-        csv_data = urllib2.urlopen(url, timeout=TIMEOUT)
-        reader = csv.reader(csv_data)
+        try:
+            csv_data = urllib2.urlopen(url, timeout=TIMEOUT)
+            reader = csv.reader(csv_data)
 
-        reader.next()  # skip the header
-        for row in reader:
-            proxy_name, server_name, queue_length = row[:3]
-            if server_name != "BACKEND":
-                continue
-            pools[proxy_name] += int(queue_length)
+            reader.next()  # skip the header
+            for row in reader:
+                proxy_name, server_name, queue_length = row[:3]
+                if server_name != "BACKEND":
+                    continue
+                pools[proxy_name] += int(queue_length)
+        except urllib2.URLError:
+            host = urlparse.urlparse(url).hostname
+            alerts.harold.alert(host, "couldn't connect to haproxy")
 
     return pools
 
