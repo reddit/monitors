@@ -9,7 +9,7 @@ import time
 import alerts
 
 
-TIMEOUT = 3  # seconds
+TIMEOUT = 6  # seconds
 CONFIG_SECTION = "haproxy"
 
 
