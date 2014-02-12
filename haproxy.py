@@ -27,9 +27,9 @@ def fetch_queue_lengths_by_pool(haproxy_stats_urls):
                 if server_name != "BACKEND":
                     continue
                 pools[proxy_name] += int(queue_length)
-        except urllib2.URLError:
+        except urllib2.URLError as e:
             host = urlparse.urlparse(url).hostname
-            alerts.harold.alert(host, "couldn't connect to haproxy")
+            alerts.harold.alert(host, "couldn't connect to haproxy: %s" % e)
 
     return pools
 
