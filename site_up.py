@@ -5,6 +5,7 @@ import time
 import urllib2
 import urlparse
 import platform
+import socket
 
 import alerts
 
@@ -24,7 +25,7 @@ def monitor_site(url):
             request = urllib2.Request(url)
             request.add_header("User-Agent", "site-up monitor by /u/spladug")
             urllib2.urlopen(request, timeout=TIMEOUT)
-        except urllib2.URLError:
+        except (urllib2.URLError, socket.timeout):
             recent_failures += 1
 
             if recent_failures > THRESHOLD:
