@@ -226,14 +226,14 @@ class Zenoss(object):
         """
         return self.change_event_state(event_id, 'close')
 
-    def create_event_on_device(self, device_name, severity, summary):
+    def create_event_on_device(self, device_name, severity, summary, component='', evclasskey='', evclass=''):
         """Manually create a new event for the device specified.
 
         """
         log.info('Creating new event for %s with severity %s', device_name, severity)
         if severity not in ('Critical', 'Error', 'Warning', 'Info', 'Debug', 'Clear'):
             raise Exception('Severity %s is not valid.' % severity)
-        data = dict(device=device_name, summary=summary, severity=severity, component='', evclasskey='', evclass='')
+        data = dict(device=device_name, summary=summary, severity=severity, component=component, evclasskey=evclasskey, evclass=evclass)
         return self.__router_request('EventsRouter', 'add_event', [data])
 
     def get_load_average(self, device_name):
