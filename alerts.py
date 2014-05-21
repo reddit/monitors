@@ -9,15 +9,17 @@ import time
 import socket
 
 import wessex
+from zenoss import Zenoss
 
-__all__ = ["harold", "config"]
+__all__ = ["harold", "config", "zenoss"]
 
 harold = None
 graphite = None
+zenoss = None
 config = None
 
 def init(config_path='production.ini'):
-    global config, harold
+    global config, harold, zenoss
     config = load_config(path=config_path)
     if config.has_section('logging'):
         configure_logging(config)
@@ -25,6 +27,8 @@ def init(config_path='production.ini'):
         configure_graphite(config)
     if config.has_section('harold'):
         harold = get_harold(config)
+    if config.has_section('zenoss'):
+        zenoss = get_zenoss(config)
 
 def load_config(path='production.ini'):
     config = ConfigParser.RawConfigParser()
@@ -37,6 +41,13 @@ def get_harold(config):
     harold_secret = config.get('harold', 'secret')
     return wessex.Harold(
         host=harold_host, port=harold_port, secret=harold_secret)
+
+def get_zenoss(config):
+    host = config.get('zenoss', 'host')
+    port = config.getint('zenoss', 'port')
+    user = config.get('zenoss', 'user')
+    password = config.get('zenoss', 'password')
+    return Zenoss('http://%s:%s/' % (host, port), user, password)
 
 class StreamLoggingFormatter(logging.Formatter):
     def formatTime(self, record, datefmt=None):
