@@ -25,22 +25,15 @@ def init(config_path='production.ini'):
         configure_logging(config)
     if config.has_section('graphite'):
         configure_graphite(config)
-    if config.has_section('harold'):
-        harold = get_harold(config)
     if config.has_section('zenoss'):
         zenoss = get_zenoss(config)
+
+    harold = wessex.connect_harold()
 
 def load_config(path='production.ini'):
     config = ConfigParser.RawConfigParser()
     config.read([path])
     return config
-
-def get_harold(config):
-    harold_host = config.get('harold', 'host')
-    harold_port = config.getint('harold', 'port')
-    harold_secret = config.get('harold', 'secret')
-    return wessex.Harold(
-        host=harold_host, port=harold_port, secret=harold_secret)
 
 def get_zenoss(config):
     host = config.get('zenoss', 'host')
