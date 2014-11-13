@@ -94,7 +94,7 @@ def send_metrics_to_statuspage(history):
     status_page = StatusPage(statuspage_page_id, statuspage_api_key)
     for metric_id, query in metrics.iteritems():
         for value, timestamp in query_results[query]:
-            status_page.send_metric(metric_id, timestamp, value)
+            status_page.send_metric(metric_id, timestamp, int(value or 0))
 
 
 if __name__ == "__main__":
