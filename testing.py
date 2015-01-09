@@ -39,10 +39,8 @@ class TestingHarold(wessex.Harold):
 
 @stub(wessex, 'Harold')
 def init_alerts(**sections):
-    wessex.Harold = TestingHarold
-    config = dict(
-        harold=dict(host='localhost', port=8888, secret='secret'),
-    )
+    wessex.connect_harold = lambda: TestingHarold("localhost", "secret")
+    config = {}
     config.update(sections)
     with tempfile.NamedTemporaryFile() as f:
         for section, data in config.iteritems():
