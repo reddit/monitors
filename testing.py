@@ -32,7 +32,7 @@ class TestingHarold(wessex.Harold):
         self.reset_for_testing()
 
     def _post_to_harold(self, path, data):
-        self.post_log.append((path, data))
+        self.post_log.append(([path], data))
 
     def reset_for_testing(self):
         self.post_log = []
