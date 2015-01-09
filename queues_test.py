@@ -47,6 +47,16 @@ class QueueMonitorTest(unittest.TestCase):
         urllib.urlopen = lambda u: StringIO.StringIO(json.dumps(data))
         self.assertEquals(dict(A=1, B=2), self.monitor.get_queue_lengths())
 
+    @testing.stub(urllib, 'urlopen')
+    def test_get_queue_lengths_filters_anonymous_queues(self):
+        data = [
+            {'name': 'A', 'messages': 1},
+            {'name': 'B', 'messages': 2},
+            {'name': 'amq.gen-abcdefg', 'messages': 3},
+        ]
+        urllib.urlopen = lambda u: StringIO.StringIO(json.dumps(data))
+        self.assertEquals(dict(A=1, B=2), self.monitor.get_queue_lengths())
+
     @testing.stub(time, 'time')
     def test_send_queue_stats(self):
         sent_messages = set()

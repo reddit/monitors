@@ -99,7 +99,8 @@ class QueueMonitor:
     def get_queue_lengths(self):
         f = urllib.urlopen(self.rabbitmq_url)
         data = json.loads(f.read())
-        return dict((item['name'], item['messages']) for item in data)
+        return dict((item['name'], item['messages']) for item in data
+                    if not item["name"].startswith("amq.gen-"))
 
     def send_heartbeat(self):
         self.last_heartbeat = time.time()
