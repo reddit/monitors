@@ -41,14 +41,7 @@ class StubTest(unittest.TestCase):
 
 class InitAlertsTest(unittest.TestCase):
     def test_init(self):
-        testing.init_alerts(
-            custom1=dict(a=1, b='two'),
-            custom2=dict(c='c'),
-        )
-        self.assertEquals('localhost', alerts.harold.host)
-        self.assertEquals(8888, alerts.harold.port)
-        self.assertEquals('secret', alerts.harold.secret)
-        self.assertEquals(1, alerts.config.getint('custom1', 'a'))
+        testing.init_alerts()
         self.assertTrue(isinstance(alerts.harold, testing.TestingHarold))
 
 if __name__ == '__main__':
