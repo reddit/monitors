@@ -5,8 +5,8 @@ import urllib2
 import urlparse
 import collections
 import time
-
 import alerts
+from datetime import datetime
 
 
 TIMEOUT = 6  # seconds
@@ -57,13 +57,25 @@ def watch_request_queues(haproxy_urls, threshold, check_interval):
         # get heartbeat-failure alerts
         pools = fetch_queue_lengths_by_pool(haproxy_urls)
 
+        day_start = datetime.time(8)
+        day_end = datetime.time(18)
+        weekend = datetime.today().isoweekday() not in [6, 7]
+
         # alert where necessary
         for pool, queue_length in pools.iteritems():
-            if queue_length > threshold:
-                if pool in queued_pools:
-                    alerts.harold.alert("queuing-%s" % pool,
-                                        "%s pool is queuing (%d)" %
-                                        (pool, queue_length))
+            # weekend check
+            if day_start <= datetime.now().time() <= day_end or weekend:
+            # Only alert between 8am & 6pm
+                if queue_length > afterhours_threshold:
+                    if pool in queued_pools:
+                        alerts.harold.alert("queuing-%s" % pool,
+                                            "%s pool is queuing (%d)" %
+                                            (pool, queue_length))
+                    queued_pools.add(pool)
+            if queue_length > afterhours_threshold:
+                alerts.harold.alert("queuing-%s" % pool,
+                    "%s pool is queuing (%d)" %
+                    (pool, queue_length))
                 queued_pools.add(pool)
             else:
                 if pool in queued_pools:
@@ -86,6 +98,7 @@ def main():
                     if key.startswith("url")]
     threshold = alerts.config.getint(CONFIG_SECTION, "threshold")
     interval = alerts.config.getint(CONFIG_SECTION, "interval")
+    afterhours_threshold = alerts.config.getint(CONFIG_SECTION, "afterhours_threshold")
 
     watch_request_queues(haproxy_urls, threshold, interval)
 
