@@ -49,7 +49,7 @@ def fetch_queue_lengths_by_pool(haproxy_stats_urls):
     return pools
 
 
-def watch_request_queues(haproxy_urls, threshold, check_interval):
+def watch_request_queues(haproxy_urls, threshold, afterhours_threshold, check_interval):
     queued_pools = set()
 
     while True:
@@ -100,7 +100,7 @@ def main():
     interval = alerts.config.getint(CONFIG_SECTION, "interval")
     afterhours_threshold = alerts.config.getint(CONFIG_SECTION, "afterhours_threshold")
 
-    watch_request_queues(haproxy_urls, threshold, interval)
+    watch_request_queues(haproxy_urls, threshold, afterhours_threshold, interval)
 
 
 if __name__ == "__main__":
