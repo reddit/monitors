@@ -2,16 +2,11 @@
 """Query metrics from Graphite and send them to statuspage.io."""
 
 import ConfigParser
-import datetime
 import posixpath
 import requests
 import time
 import urllib
 import urlparse
-
-
-def graphite_datetime(dt):
-    return dt.strftime("%H:%M_%Y%m%d")
 
 
 class Graphite(object):
@@ -28,8 +23,8 @@ class Graphite(object):
     def query(self, queries, from_time, until_time):
         params = [
             ("format", "json"),
-            ("from", graphite_datetime(from_time)),
-            ("until", graphite_datetime(until_time)),
+            ("from", from_time),
+            ("until", until_time),
         ]
 
         for query in queries:
@@ -76,13 +71,12 @@ class StatusPage(object):
         time.sleep(1)
 
 
-def send_metrics_to_statuspage(history):
+def send_metrics_to_statuspage(from_time):
     parser = ConfigParser.RawConfigParser()
     with open("production.ini") as f:
         parser.readfp(f)
 
-    until_time = datetime.datetime.now().replace(second=0, microsecond=0)
-    from_time = until_time - history
+    until_time = "now"
 
     graphite_url = parser.get("statuspage", "graphite_url")
     graphite = Graphite(graphite_url)
@@ -98,4 +92,4 @@ def send_metrics_to_statuspage(history):
 
 
 if __name__ == "__main__":
-    send_metrics_to_statuspage(history=datetime.timedelta(minutes=2))
+    send_metrics_to_statuspage(from_time="-2min")
