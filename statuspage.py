@@ -47,7 +47,7 @@ class Graphite(object):
         response.raise_for_status()
 
         result = {}
-        for target_data in response.json:
+        for target_data in response.json():
             result[target_data["target"]] = target_data["datapoints"]
         return result
 
